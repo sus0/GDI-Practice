@@ -1,12 +1,28 @@
 #include<Windows.h>
 #include "Design.h"
+
+#pragma comment(lib, "winmm.lib")
+
 #define WINDOW_TITLE L"GameDevPractice"
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 
 
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+//-----------------------------------------------Global Variables---------------------------------------------
+//DESCRIPTION: Declare all global variables here
+//------------------------------------------------------------------------------------------------------------
+HDC g_hdc = NULL; //global hdc
 
+CHARACTER Hero, Dragon;
+Actions Hero_Actions, Dragon_Actions;
+
+//------------------------------------------------------Functions---------------------------------------------
+//DESCRIPTION: Declare all functions here
+//------------------------------------------------------------------------------------------------------------
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+BOOL Game_Initializer(HWND hwnd);
+
+//------------------------------------------------WinMain Function---------------------------------------------
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	WNDCLASSEX wndClass = {
@@ -48,8 +64,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	ShowWindow(hwnd, nCmdShow);
 	UpdateWindow(hwnd);
 
+	if(!Game_Initializer(hwnd))
+	{
+		MessageBox(hwnd, L"Failed to load game resources", L"Error", 0);
+	}
 
-	//whether the resources can be loaded
+	PlaySound(L"Media\\bgm.wav", NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
 
 	//Message loop
 	MSG msg = {0};
@@ -73,7 +93,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 }
 
 //----------------------------------------------WindowProc()--------------------------------------------------
-//DECRIPTION: Window Procedure function
+//DESCRIPTION: Window Procedure function
 //------------------------------------------------------------------------------------------------------------
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -91,13 +111,23 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			PostQuitMessage(0);
 			break;
 
+		case WM_LBUTTONDOWN: //left button of mouse clicked
+			//do something
+
+			break;
+
 		default:
 			return DefWindowProc(hwnd, msg, wParam, lParam);
-			
-	return 0;
 	}
 
+	return 0;
+}
 
-
-
+//---------------------------------------------Game Initializer-----------------------------------------------
+//DESCRIPTION: Load all game resources
+//------------------------------------------------------------------------------------------------------------
+BOOL Game_Initializer(HWND hwnd)
+{
+	//for test
+	return true;
 }
