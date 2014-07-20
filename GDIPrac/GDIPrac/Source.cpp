@@ -1,7 +1,9 @@
 #include<Windows.h>
+#include<time.h>
 #include "Design.h"
 
 #pragma comment(lib, "winmm.lib")
+#pragma comment(lib, "Msimg32.lib")
 
 #define WINDOW_TITLE L"GameDevPractice"
 #define WINDOW_WIDTH 800
@@ -11,8 +13,10 @@
 //-----------------------------------------------Global Variables---------------------------------------------
 //DESCRIPTION: Declare all global variables here
 //------------------------------------------------------------------------------------------------------------
-HDC g_hdc = NULL; //global hdc
-
+HDC g_hdc = NULL, g_mdc= NULL, g_bufdc = NULL; //global hdc
+DWORD g_tPrev, g_tCurr;
+RECT g_rect;
+HBITMAP g_hBackground, g_hHero;
 CHARACTER Hero, Dragon;
 Actions Hero_Actions, Dragon_Actions;
 
@@ -21,7 +25,7 @@ Actions Hero_Actions, Dragon_Actions;
 //------------------------------------------------------------------------------------------------------------
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 BOOL Game_Initializer(HWND hwnd);
-
+void Game_Main(HWND hwnd);
 //------------------------------------------------WinMain Function---------------------------------------------
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
@@ -82,7 +86,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 		else
 		{
-			//paint
+			g_tCurr = GetTickCount();
+			if (g_tCurr - g_tPrev >= 60)
+			{
+					Game_Main(hwnd);
+			}
+		
 		}
 	}
 
@@ -128,6 +137,43 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 //------------------------------------------------------------------------------------------------------------
 BOOL Game_Initializer(HWND hwnd)
 {
-	//for test
+	srand((unsigned)time(NULL)); //generate seed using current time
+
+	HBITMAP bmp; //blank bitmap
+
+	//buffers
+	g_hdc = GetDC(hwnd);
+	g_mdc = CreateCompatibleDC(g_hdc);
+	g_bufdc = CreateCompatibleDC(g_hdc);
+	bmp = CreateCompatibleBitmap(g_hdc, WINDOW_WIDTH, WINDOW_HEIGHT);
+	SelectObject(g_mdc, bmp); 
+
+	//load game resources
+	//HBITMAP image=(HBITMAP)LoadImage(0,L"Media\\8.bmp",IMAGE_BITMAP,360, 360,LR_LOADFROMFILE);
+	//if(image == NULL)
+    //MessageBox(0, L"Couldn't load the image", L"Error", MB_OK);
+
+	g_hBackground = (HBITMAP)LoadImage(NULL,L"Media\\background.bmp", IMAGE_BITMAP, 800, 600, LR_LOADFROMFILE);
+	g_hHero = (HBITMAP)LoadImage(NULL,L"Media\\hero.bmp", IMAGE_BITMAP, 360, 360, LR_LOADFROMFILE);	
+	
+	GetClientRect(hwnd, &g_rect);
+	
+	Game_Main(hwnd);
+	//ReleaseDC(hwnd, g_hdc);
 	return true;
+}
+
+
+
+void Game_Main(HWND hwnd)
+{
+	SelectObject(g_bufdc, g_hBackground);
+	BitBlt(g_mdc, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, g_bufdc, 0, 0, SRCCOPY);
+
+    SelectObject(g_bufdc, g_hHero);
+	TransparentBlt(g_mdc, 400, 100, 360, 360, g_bufdc, 0, 0, 360, 360, RGB(0, 0, 0));
+	//BitBlt(g_mdc,400, 100, WINDOW_WIDTH, WINDOW_HEIGHT, g_bufdc, 0, 0, SRCCOPY);
+
+	BitBlt(g_hdc, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, g_mdc, 0, 0, SRCCOPY);
+	g_tPrev = GetTickCount();
 }
