@@ -16,7 +16,7 @@
 HDC g_hdc = NULL, g_mdc= NULL, g_bufdc = NULL; //global hdc
 DWORD g_tPrev, g_tCurr;
 RECT g_rect;
-HBITMAP g_hBackground, g_hHero;
+HBITMAP g_hBackground, g_hHero, g_hDragon;
 CHARACTER Hero, Dragon;
 Actions Hero_Actions, Dragon_Actions;
 
@@ -154,8 +154,8 @@ BOOL Game_Initializer(HWND hwnd)
     //MessageBox(0, L"Couldn't load the image", L"Error", MB_OK);
 
 	g_hBackground = (HBITMAP)LoadImage(NULL,L"Media\\background.bmp", IMAGE_BITMAP, 800, 600, LR_LOADFROMFILE);
-	g_hHero = (HBITMAP)LoadImage(NULL,L"Media\\hero.bmp", IMAGE_BITMAP, 360, 360, LR_LOADFROMFILE);	
-	
+	g_hHero = (HBITMAP)LoadImage(NULL,L"Media\\hero.bmp", IMAGE_BITMAP, 400, 200, LR_LOADFROMFILE);	
+	g_hDragon = (HBITMAP)LoadImage(NULL, L"Media\\dragon.bmp", IMAGE_BITMAP, 800, 350, LR_LOADFROMFILE);
 	GetClientRect(hwnd, &g_rect);
 	
 	Game_Main(hwnd);
@@ -169,10 +169,16 @@ void Game_Main(HWND hwnd)
 {
 	SelectObject(g_bufdc, g_hBackground);
 	BitBlt(g_mdc, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, g_bufdc, 0, 0, SRCCOPY);
+	//dragon
+	SelectObject(g_bufdc, g_hDragon);
+	BitBlt(g_mdc, 50, 150, 400, 350, g_bufdc, 400, 0, SRCAND);
+	BitBlt(g_mdc, 50, 150, 400, 350, g_bufdc, 0, 0, SRCPAINT);
 
+	//Hero
     SelectObject(g_bufdc, g_hHero);
-	TransparentBlt(g_mdc, 400, 100, 360, 360, g_bufdc, 0, 0, 360, 360, RGB(0, 0, 0));
-	//BitBlt(g_mdc,400, 100, WINDOW_WIDTH, WINDOW_HEIGHT, g_bufdc, 0, 0, SRCCOPY);
+	//TransparentBlt(g_mdc, 400, 100, 360, 360, g_bufdc, 0, 0, 360, 360, RGB(0, 0, 0));
+	BitBlt(g_mdc, 500, 250, 200, 200, g_bufdc, 200, 0, SRCAND);
+	BitBlt(g_mdc, 500, 250, 200, 200, g_bufdc, 0, 0, SRCPAINT);
 
 	BitBlt(g_hdc, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, g_mdc, 0, 0, SRCCOPY);
 	g_tPrev = GetTickCount();
