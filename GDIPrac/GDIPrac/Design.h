@@ -9,7 +9,7 @@ struct CHARACTER
 	int Level;     //Level of the character
 	int Strength;  //Strength of the character
 	int Agility;   //Agility of the character
-	//int Intellect; Intellect of the character
+	int Intellect; //Intellect of the character
 };
 
 

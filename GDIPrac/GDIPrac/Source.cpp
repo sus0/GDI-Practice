@@ -1,31 +1,52 @@
 #include<Windows.h>
 #include<time.h>
+#include<tchar.h>
 #include "Design.h"
 
 #pragma comment(lib, "winmm.lib")
 #pragma comment(lib, "Msimg32.lib")
 
 #define WINDOW_TITLE L"GameDevPractice"
-#define WINDOW_WIDTH 800
-#define WINDOW_HEIGHT 600
+#define WINDOW_WIDTH 1024
+#define WINDOW_HEIGHT 768
 
 
 //-----------------------------------------------Global Variables---------------------------------------------
 //DESCRIPTION: Declare all global variables here
 //------------------------------------------------------------------------------------------------------------
 HDC g_hdc = NULL, g_mdc= NULL, g_bufdc = NULL; //global hdc
-DWORD g_tPrev, g_tCurr;
+DWORD g_tPrev = 0, g_tCurr = 0;
 RECT g_rect;
-HBITMAP g_hBackground, g_hHero, g_hDragon;
+int g_iFrameNo, g_iTextLineNo;
+wchar_t text[7][100]; // store the output texts
+BOOL g_bAttack, g_bGameOver;
 CHARACTER Hero, Dragon;
 Actions Hero_Actions, Dragon_Actions;
+//HBITMAPS
+HBITMAP g_hBackground, g_hGameOver, g_hVictory;
+		//hero side
+HBITMAP g_hHero;
+HBITMAP g_hSkillBt1, g_hSkillBt2, g_hSkillBt3, g_hSkillBt4;
+HBITMAP g_hHeroEffect1, g_hHeroEffect2, g_hHeroEffect3, g_hHeroRecoverEffect;
+
+		//dragon side
+HBITMAP g_hDragon;
+HBITMAP g_hDragonEffect1, g_hDragonEffect2, g_hDragonEffect3;
 
 //------------------------------------------------------Functions---------------------------------------------
 //DESCRIPTION: Declare all functions here
 //------------------------------------------------------------------------------------------------------------
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 BOOL Game_Initializer(HWND hwnd);
-void Game_Main(HWND hwnd);
+VOID Game_Main(HWND hwnd);
+BOOL Game_ShutDown(HWND hwnd);
+VOID CheckDeath(int CurrHp, bool isHero);
+VOID Msg_Insert(wchar_t *str);
+VOID HeroAction_Logic();
+VOID HeroAction_Paint();
+VOID DragonAction_Logic();
+VOID DragonAction_Paint();
+
 //------------------------------------------------WinMain Function---------------------------------------------
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
@@ -89,7 +110,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			g_tCurr = GetTickCount();
 			if (g_tCurr - g_tPrev >= 60)
 			{
-					Game_Main(hwnd);
+				Game_Main(hwnd);
 			}
 		
 		}
@@ -116,12 +137,40 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			break;
 
 		case WM_DESTROY: 
-			//shut down the game
+			Game_ShutDown(hwnd);
 			PostQuitMessage(0);
 			break;
 
 		case WM_LBUTTONDOWN: //left button of mouse clicked
-			//do something
+			if(!g_bAttack)
+			{
+				int x = LOWORD(lParam);
+				int y = HIWORD(lParam);
+				
+				//TCHAR buf[100];
+				//swprintf_s(buf, _T("%d"), y);
+				//MessageBox(hwnd, buf, L"Testing", MB_OK);
+				//
+				if(x >= 700 && x <= 750 && y >=610 && y <= 660)
+				{
+					g_bAttack = true;
+					Hero_Actions = ACTION_NORMAL;
+				}
+				
+				if(x >= 760 && x <= 810 && y >=610 && y <= 660)
+				{
+			
+					g_bAttack = true;
+					Hero_Actions = ACTION_MAGIC;
+				}
+				
+				if(x >= 820 && x <= 870 && y >=610 && y <= 660)
+				{
+					g_bAttack = true;
+					Hero_Actions = ACTION_RECOVER;
+				}
+
+			}
 
 			break;
 
@@ -149,37 +198,420 @@ BOOL Game_Initializer(HWND hwnd)
 	SelectObject(g_mdc, bmp); 
 
 	//load game resources
-	//HBITMAP image=(HBITMAP)LoadImage(0,L"Media\\8.bmp",IMAGE_BITMAP,360, 360,LR_LOADFROMFILE);
+	//HBITMAP image=(HBITMAP)LoadImage(0,L"Media\\bt2.bmp",IMAGE_BITMAP,360, 360,LR_LOADFROMFILE);
 	//if(image == NULL)
-    //MessageBox(0, L"Couldn't load the image", L"Error", MB_OK);
+   //MessageBox(0, L"Couldn't load the image", L"Error", MB_OK);
 
-	g_hBackground = (HBITMAP)LoadImage(NULL,L"Media\\background.bmp", IMAGE_BITMAP, 800, 600, LR_LOADFROMFILE);
+	g_hBackground = (HBITMAP)LoadImage(NULL,L"Media\\nbk2.bmp", IMAGE_BITMAP, 1022, 767, LR_LOADFROMFILE);
+	g_hGameOver = (HBITMAP)LoadImage(NULL,L"Media\\gameover.bmp", IMAGE_BITMAP, 1000, 400, LR_LOADFROMFILE);
+	g_hVictory = (HBITMAP)LoadImage(NULL,L"Media\\gameover.bmp", IMAGE_BITMAP, 1000, 400, LR_LOADFROMFILE);
 	g_hHero = (HBITMAP)LoadImage(NULL,L"Media\\hero.bmp", IMAGE_BITMAP, 400, 200, LR_LOADFROMFILE);	
 	g_hDragon = (HBITMAP)LoadImage(NULL, L"Media\\dragon.bmp", IMAGE_BITMAP, 800, 350, LR_LOADFROMFILE);
+	g_hSkillBt1 = (HBITMAP)LoadImage(NULL, L"Media\\bt1.bmp", IMAGE_BITMAP, 50, 50, LR_LOADFROMFILE); 
+	g_hSkillBt2 = (HBITMAP)LoadImage(NULL, L"Media\\bt2.bmp", IMAGE_BITMAP, 50, 50, LR_LOADFROMFILE); 
+	g_hSkillBt3 = (HBITMAP)LoadImage(NULL, L"Media\\bt3.bmp", IMAGE_BITMAP, 50, 50, LR_LOADFROMFILE); 
+	g_hSkillBt4 = (HBITMAP)LoadImage(NULL, L"Media\\bt3.bmp", IMAGE_BITMAP, 50, 50, LR_LOADFROMFILE); 
 	GetClientRect(hwnd, &g_rect);
 	
+
+	//Config hero properties
+	Hero.CurrHp = Hero.MaxHp = 100;
+	Hero.Level = 5;
+	Hero.CurrMp = Hero.MaxMp = 100;
+	Hero.Strength = 10;
+	Hero.Agility = 20;
+	Hero.Intellect = 10;
+
+	//Config dragon properties
+	Dragon.CurrHp = Dragon.MaxHp = 2000;
+	Dragon.Level = 10;
+	Dragon.Strength = 10;
+	Dragon.Agility = 10;
+	Dragon.Intellect = 10;
+
+	g_iTextLineNo = 0;
+	
+	//Config fonts
+	HFONT hFont;
+	hFont = CreateFont(20, 0, 0, 0, 700, 0, 0, 0 , DEFAULT_CHARSET, 0, 0, 0, 0, TEXT("Comic Sans MS"));
+	SelectObject(g_mdc, hFont);
+	SetBkMode(g_mdc, TRANSPARENT);
+
 	Game_Main(hwnd);
-	//ReleaseDC(hwnd, g_hdc);
 	return true;
 }
 
 
 
-void Game_Main(HWND hwnd)
+VOID Game_Main(HWND hwnd)
 {
+	wchar_t str[100];
+
 	SelectObject(g_bufdc, g_hBackground);
 	BitBlt(g_mdc, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, g_bufdc, 0, 0, SRCCOPY);
-	//dragon
-	SelectObject(g_bufdc, g_hDragon);
-	BitBlt(g_mdc, 50, 150, 400, 350, g_bufdc, 400, 0, SRCAND);
-	BitBlt(g_mdc, 50, 150, 400, 350, g_bufdc, 0, 0, SRCPAINT);
 
-	//Hero
-    SelectObject(g_bufdc, g_hHero);
-	//TransparentBlt(g_mdc, 400, 100, 360, 360, g_bufdc, 0, 0, 360, 360, RGB(0, 0, 0));
-	BitBlt(g_mdc, 500, 250, 200, 200, g_bufdc, 200, 0, SRCAND);
-	BitBlt(g_mdc, 500, 250, 200, 200, g_bufdc, 0, 0, SRCPAINT);
+	SetTextColor(g_mdc, RGB(0, 0, 0));
+	
+	for (int i = 0; i < g_iTextLineNo; i++)
+	{
+		TextOut(g_mdc, 40, 600+i*18, text[i], wcslen(text[i]));
+	}
+
+	//the dragon is alive
+	if(Dragon.CurrHp > 0)
+	{
+		SelectObject(g_bufdc, g_hDragon);
+		BitBlt(g_mdc, 50, 250, 400, 350, g_bufdc, 400, 0, SRCAND);
+		BitBlt(g_mdc, 50, 250, 400, 350, g_bufdc, 0, 0, SRCPAINT);
+	
+		swprintf_s(str, L"%d / %d", Dragon.CurrHp, Dragon.MaxHp);
+		SetTextColor(g_mdc, RGB(0, 0, 0));
+		TextOut(g_mdc, 160, 560 , str, wcslen(str));
+	}
+
+
+	
+	//the hero is alive
+	if (Hero.CurrHp > 0)
+	{
+		SelectObject(g_bufdc, g_hHero);
+		BitBlt(g_mdc, 700, 350, 200, 200, g_bufdc, 200, 0, SRCAND);
+		BitBlt(g_mdc, 700, 350, 200, 200, g_bufdc, 0, 0, SRCPAINT);
+		
+		//show hp
+		swprintf_s(str, L"%d / %d", Hero.CurrHp, Hero.MaxHp);
+		SetTextColor(g_mdc, RGB(0, 0, 0));
+		TextOut(g_mdc, 740, 560 , str, wcslen(str));
+	
+		//show mp
+		swprintf_s(str, L"%d / %d", Hero.CurrMp, Hero.MaxMp);
+		SetTextColor(g_mdc, RGB(0, 0, 0));
+		TextOut(g_mdc, 750, 580 , str, wcslen(str));
+	}
+
+	//if game is over
+	if(g_bGameOver)
+	{
+		if (Hero.CurrHp <= 0)
+		{
+			SelectObject(g_bufdc, g_hGameOver);	
+			BitBlt(g_mdc, 260, 200, 500, 400, g_bufdc, 500, 0, SRCAND);
+			BitBlt(g_mdc, 260, 200, 500, 400, g_bufdc, 0, 0, SRCPAINT);
+		}
+		else
+		{
+			SelectObject(g_bufdc, g_hVictory);	
+			BitBlt(g_mdc, 120, 50, 500, 400, g_bufdc, 500, 0, SRCAND);
+			BitBlt(g_mdc, 120, 50, 500, 400, g_bufdc, 0, 0, SRCPAINT);
+		}
+	}
+	
+	else if(!g_bAttack)
+	{ //skill buttons
+		SelectObject(g_bufdc, g_hSkillBt1);
+		BitBlt(g_mdc, 700, 610, 50, 50, g_bufdc, 0, 0, SRCCOPY);
+		SelectObject(g_bufdc, g_hSkillBt2);
+		BitBlt(g_mdc, 760, 610, 50, 50, g_bufdc, 0, 0, SRCCOPY);
+		SelectObject(g_bufdc, g_hSkillBt3);
+		BitBlt(g_mdc, 820, 610, 50, 50, g_bufdc, 0, 0, SRCCOPY);
+		SelectObject(g_bufdc, g_hSkillBt3);
+		BitBlt(g_mdc, 880, 610, 50, 50, g_bufdc, 0, 0, SRCCOPY);
+	}
+
+	else
+	{
+		g_iFrameNo ++;
+
+		if (g_iFrameNo >= 5 && g_iFrameNo <= 10)
+		{
+			if ((g_iFrameNo == 5))
+			{
+				HeroAction_Logic();
+				CheckDeath(Dragon.CurrHp, false);
+			}
+		}
+
+		if(g_iFrameNo == 15)
+		{
+			DragonAction_Logic();
+		}
+
+		if(g_iFrameNo >=26 && g_iFrameNo <=30)
+		{
+			DragonAction_Paint();
+		}
+
+		if(g_iFrameNo == 30)
+		{
+			g_bAttack = false;
+			g_iFrameNo = 0;
+		
+
+			if (!g_bGameOver)
+			{
+				int MpRecovered = 2*(rand()%Hero.Intellect) + 6;
+				Hero.CurrMp += MpRecovered;
+
+				if(Hero.CurrMp >= Hero.MaxMp)
+				{
+					Hero.CurrMp = Hero.MaxMp;
+				}
+
+			swprintf_s(str, L"Your MP recovers [%d] MP after this round", MpRecovered);
+			Msg_Insert(str);
+		
+			}
+		}
+	}
+
 
 	BitBlt(g_hdc, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, g_mdc, 0, 0, SRCCOPY);
 	g_tPrev = GetTickCount();
+}
+
+//---------------------------------------------If Die---------------------------------------------------------
+//DESCRIPTION: check if the character dies
+//------------------------------------------------------------------------------------------------------------
+VOID CheckDeath(int CurrHp, bool isHero)
+{
+	wchar_t str[100];
+	if (CurrHp <= 0)
+	{
+		g_bGameOver = true;
+		if (isHero)
+		{
+			swprintf_s(str, L": You die!");		
+			Msg_Insert(str);
+		}
+	
+		else
+		{
+			swprintf_s(str, L": You Win!");
+			Msg_Insert(str);
+		}
+
+	}
+}
+
+//-------------------------------------------Insert Message---------------------------------------------------
+//DESCRIPTION: insert message into textbox
+//------------------------------------------------------------------------------------------------------------
+VOID Msg_Insert(wchar_t *str)
+{
+	if(g_iTextLineNo < 7)
+	{
+		swprintf_s(text[g_iTextLineNo], str);
+		g_iTextLineNo ++;
+	}
+	else
+	{
+		for (int i = 0; i < g_iTextLineNo; i++)
+		{
+			swprintf_s(text[i], text[i+1]);
+			swprintf_s(text[6], str);
+		}
+	}
+}
+
+//-------------------------------------------Hero Logic---------------------------------------------------
+//DESCRIPTION: logic of hero attacks
+//------------------------------------------------------------------------------------------------------------
+VOID HeroAction_Logic()
+{
+	int dragonHpLoss = 0;
+	wchar_t str[100];
+
+	switch(Hero_Actions)
+	{
+	case ACTION_NORMAL:
+		if(1== rand()%5) // 20% chance to trigger critical attack
+		{
+			Hero_Actions = ACTION_CRITICAL;
+			dragonHpLoss = (int)(5.5f*(float)(3*rand()%Hero.Agility) + Hero.Level*Hero.Strength + 20);
+			Dragon.CurrHp -= (int)dragonHpLoss;
+			swprintf_s(str, L"Lucky you! Critical Strike!  5+ times greater than a regular attack! You just caused %d hp loss of the boss", dragonHpLoss);
+		}
+		else
+		{
+			dragonHpLoss = 3*(rand()%Hero.Agility) + Hero.Level*Hero.Strength + 20;
+			Dragon.CurrHp -= (int)dragonHpLoss;
+			swprintf_s(str, L"Regular attack! You just caused the boss to lose %d hp", dragonHpLoss);
+		}
+		Msg_Insert(str);
+		break;
+		
+	case ACTION_MAGIC:
+		if(Hero.CurrMp >= 30)
+		{
+			dragonHpLoss = 5*(2*(rand()%Hero.Agility) + Hero.Level*Hero.Intellect);
+			Dragon.CurrHp -= (int)dragonHpLoss;
+			Hero.CurrMp -= 30;
+			swprintf_s(str, L"Magic Attack! Caused %d points of health loss", dragonHpLoss);
+		}
+		else
+		{
+			Hero_Actions = ACTION_MISS;
+			swprintf_s(str, L"You do not have enough magic points now! Please release the skill when you have 30 or more MP");
+		}
+		Msg_Insert(str);
+		break;
+
+	case ACTION_RECOVER:
+		if(Hero.CurrMp >= 40)
+		{
+			Hero.CurrMp -= 40;
+			int HpRecovered = 5*(5*(rand()%Hero.Intellect) + 40);
+			Hero.CurrHp += HpRecovered;
+
+			if(Hero.CurrHp >= Hero.MaxHp)
+			{
+				Hero.CurrHp = Hero.MaxHp;
+			}
+			swprintf_s(str, L"You just used recovery magic, and gained %d Hps. You feel much better now!", HpRecovered);
+		}
+		else
+		{
+			Hero_Actions = ACTION_MISS;
+			swprintf_s(str, L"You do not have enough magic points now! Please release the skill when you have 40 or more MP");
+		}
+		Msg_Insert(str);
+		break;
+	}
+}
+
+VOID DragonAction_Logic()
+{
+	srand((unsigned)time(NULL));
+	if(Dragon.CurrHp > (Dragon.MaxMp/2))
+	{
+		switch(rand()%3)
+		{
+		case 0:
+			Dragon_Actions = ACTION_NORMAL;
+			break;
+		
+		case 1:
+			Dragon_Actions = ACTION_CRITICAL;
+			break;
+
+		case 2:
+			Dragon_Actions = ACTION_MAGIC;
+			break;
+		}
+	}
+	else
+	{
+		switch(rand()%3)
+		{
+		case 0:
+			Dragon_Actions = ACTION_MAGIC;
+			break;
+
+		case 1: 
+			Dragon_Actions = ACTION_CRITICAL;
+			break;
+
+		case 2:
+			Dragon_Actions = ACTION_RECOVER;
+			break;
+		
+		}	
+	}
+
+}
+
+
+VOID DragonAction_Paint()
+{
+	int loss = 0, recover = 0;
+	wchar_t str[100];
+
+	switch(Dragon_Actions)
+	{
+	case ACTION_NORMAL:							
+		//SelectObject(g_bufdc,g_hBossSkill1);
+		//TransparentBlt(g_mdc,500,150,234,188,g_bufdc,0,0,234,188,RGB(0,0,0));
+	
+		if(g_iFrameNo == 30)
+		{
+			loss = rand()%Dragon.Agility+ Dragon.Level*Dragon.Strength;
+			Hero.CurrHp -= (int)loss;
+
+			swprintf_s(str,L"Watch out! The boss cause %d hp loss on you...", loss);
+			Msg_Insert(str);
+
+			CheckDeath(Hero.CurrHp, true);
+		}
+		break;
+
+	case ACTION_MAGIC:							
+		//SelectObject(g_bufdc,g_hBossSkill2);
+		//TransparentBlt(g_mdc,450,150,387,254,g_bufdc,0,0,387,254,RGB(0,0,0));
+		if(g_iFrameNo == 30)
+		{
+			loss = 2*(2*(rand()%Dragon.Agility) + Dragon.Strength*Dragon.Intellect); 
+			Hero.CurrHp -= loss;	   
+			Dragon.CurrHp += recover;  \
+			swprintf_s(str,L"The boss caused another %d hp loss due to its magic attack", loss, recover);  
+			Msg_Insert(str);  
+
+			CheckDeath(Hero.CurrHp,true);
+		}
+		break;
+
+	case ACTION_CRITICAL:							
+		//SelectObject(g_bufdc,g_hBossSkill3);
+		//TransparentBlt(g_mdc,280,100,574,306,g_bufdc,0,0,574,306,RGB(0,0,0));
+
+		if(g_iFrameNo == 30)
+		{
+			loss = 2*(rand()%Dragon.Agility+ Dragon.Level*Dragon.Strength);
+			Hero.CurrHp -= (int)loss;
+
+			swprintf_s(str,L"Poor you! The dragon just made a critical strike with %d Hp loss on you!", loss);
+			Msg_Insert(str);
+
+			CheckDeath(Hero.CurrHp,true);
+		}
+		break;
+
+	case ACTION_RECOVER:						
+		//SelectObject(g_bufdc,g_hRecoverSkill);
+		//TransparentBlt(g_mdc,150,150,150,150,g_bufdc,0,0,150,150,RGB(0,0,0));
+		if(g_iFrameNo == 30)
+		{
+			recover= 2*Dragon.Intellect*Dragon.Intellect;
+			Dragon.CurrHp +=recover;
+			swprintf_s(str,L"It just recovered itself by %d hp. Got to take an actiom!",recover);
+			Msg_Insert(str);
+		}
+		break;
+	}
+}
+
+//---------------------------------------------Game ShutDown--------------------------------------------------
+//DESCRIPTION: release all game resources
+//------------------------------------------------------------------------------------------------------------
+BOOL Game_ShutDown(HWND hwnd)
+{
+	DeleteObject(g_hBackground);
+	DeleteObject(g_hVictory);
+	DeleteObject(g_hGameOver);
+	DeleteObject(g_hDragon);
+	DeleteObject(g_hHero);
+	DeleteObject(g_hSkillBt1);
+	DeleteObject(g_hSkillBt2);
+	DeleteObject(g_hSkillBt3);
+	DeleteObject(g_hSkillBt4);
+	DeleteObject(g_hHeroEffect1);
+	DeleteObject(g_hHeroEffect2);
+	DeleteObject(g_hHeroEffect3);
+	DeleteObject(g_hDragonEffect1);
+	DeleteObject(g_hDragonEffect2);
+	DeleteObject(g_hDragonEffect3);
+	
+	DeleteDC(g_bufdc);
+	DeleteDC(g_mdc);
+	ReleaseDC(hwnd, g_hdc);
+	return true;
 }
