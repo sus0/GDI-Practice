@@ -204,7 +204,7 @@ BOOL Game_Initializer(HWND hwnd)
 
 	g_hBackground = (HBITMAP)LoadImage(NULL,L"Media\\nbk2.bmp", IMAGE_BITMAP, 1022, 767, LR_LOADFROMFILE);
 	g_hGameOver = (HBITMAP)LoadImage(NULL,L"Media\\gameover.bmp", IMAGE_BITMAP, 1000, 400, LR_LOADFROMFILE);
-	g_hVictory = (HBITMAP)LoadImage(NULL,L"Media\\gameover.bmp", IMAGE_BITMAP, 1000, 400, LR_LOADFROMFILE);
+	g_hVictory = (HBITMAP)LoadImage(NULL,L"Media\\victory.bmp", IMAGE_BITMAP, 1000, 400, LR_LOADFROMFILE);
 	g_hHero = (HBITMAP)LoadImage(NULL,L"Media\\hero.bmp", IMAGE_BITMAP, 400, 200, LR_LOADFROMFILE);	
 	g_hDragon = (HBITMAP)LoadImage(NULL, L"Media\\dragon.bmp", IMAGE_BITMAP, 800, 350, LR_LOADFROMFILE);
 	g_hSkillBt1 = (HBITMAP)LoadImage(NULL, L"Media\\bt1.bmp", IMAGE_BITMAP, 50, 50, LR_LOADFROMFILE); 
@@ -216,7 +216,7 @@ BOOL Game_Initializer(HWND hwnd)
 
 	//Config hero properties
 	Hero.CurrHp = Hero.MaxHp = 1000;
-	Hero.Level = 5;
+	Hero.Level = 6;
 	Hero.CurrMp = Hero.MaxMp = 100;
 	Hero.Strength = 10;
 	Hero.Agility = 20;
@@ -301,8 +301,8 @@ VOID Game_Main(HWND hwnd)
 		else
 		{
 			SelectObject(g_bufdc, g_hVictory);	
-			BitBlt(g_mdc, 120, 50, 500, 400, g_bufdc, 500, 0, SRCAND);
-			BitBlt(g_mdc, 120, 50, 500, 400, g_bufdc, 0, 0, SRCPAINT);
+			BitBlt(g_mdc, 260, 200, 500, 400, g_bufdc, 500, 0, SRCAND);
+			BitBlt(g_mdc, 260, 200, 500, 400, g_bufdc, 0, 0, SRCPAINT);
 		}
 	}
 	
@@ -408,8 +408,9 @@ VOID Msg_Insert(wchar_t *str)
 		for (int i = 0; i < g_iTextLineNo; i++)
 		{
 			swprintf_s(text[i], text[i+1]);
-			swprintf_s(text[6], str);
 		}
+			swprintf_s(text[6], str);
+		
 	}
 }
 
