@@ -210,12 +210,12 @@ BOOL Game_Initializer(HWND hwnd)
 	g_hSkillBt1 = (HBITMAP)LoadImage(NULL, L"Media\\bt1.bmp", IMAGE_BITMAP, 50, 50, LR_LOADFROMFILE); 
 	g_hSkillBt2 = (HBITMAP)LoadImage(NULL, L"Media\\bt2.bmp", IMAGE_BITMAP, 50, 50, LR_LOADFROMFILE); 
 	g_hSkillBt3 = (HBITMAP)LoadImage(NULL, L"Media\\bt3.bmp", IMAGE_BITMAP, 50, 50, LR_LOADFROMFILE); 
-	g_hSkillBt4 = (HBITMAP)LoadImage(NULL, L"Media\\bt3.bmp", IMAGE_BITMAP, 50, 50, LR_LOADFROMFILE); 
+	g_hSkillBt4 = (HBITMAP)LoadImage(NULL, L"Media\\bt4.bmp", IMAGE_BITMAP, 50, 50, LR_LOADFROMFILE); 
 	GetClientRect(hwnd, &g_rect);
 	
 
 	//Config hero properties
-	Hero.CurrHp = Hero.MaxHp = 100;
+	Hero.CurrHp = Hero.MaxHp = 1000;
 	Hero.Level = 5;
 	Hero.CurrMp = Hero.MaxMp = 100;
 	Hero.Strength = 10;
@@ -314,7 +314,7 @@ VOID Game_Main(HWND hwnd)
 		BitBlt(g_mdc, 760, 610, 50, 50, g_bufdc, 0, 0, SRCCOPY);
 		SelectObject(g_bufdc, g_hSkillBt3);
 		BitBlt(g_mdc, 820, 610, 50, 50, g_bufdc, 0, 0, SRCCOPY);
-		SelectObject(g_bufdc, g_hSkillBt3);
+		SelectObject(g_bufdc, g_hSkillBt4);
 		BitBlt(g_mdc, 880, 610, 50, 50, g_bufdc, 0, 0, SRCCOPY);
 	}
 
