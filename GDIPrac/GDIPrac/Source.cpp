@@ -216,7 +216,7 @@ BOOL Game_Initializer(HWND hwnd)
 	
 
 	//Config hero properties
-	Hero.CurrHp = Hero.MaxHp = 10;
+	Hero.CurrHp = Hero.MaxHp = 1000;
 	Hero.Level = 6;
 	Hero.CurrMp = Hero.MaxMp = 100;
 	Hero.Strength = 10;
