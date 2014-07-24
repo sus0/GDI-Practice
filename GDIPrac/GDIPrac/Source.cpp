@@ -211,11 +211,12 @@ BOOL Game_Initializer(HWND hwnd)
 	g_hSkillBt2 = (HBITMAP)LoadImage(NULL, L"Media\\bt2.bmp", IMAGE_BITMAP, 50, 50, LR_LOADFROMFILE); 
 	g_hSkillBt3 = (HBITMAP)LoadImage(NULL, L"Media\\bt3.bmp", IMAGE_BITMAP, 50, 50, LR_LOADFROMFILE); 
 	g_hSkillBt4 = (HBITMAP)LoadImage(NULL, L"Media\\bt4.bmp", IMAGE_BITMAP, 50, 50, LR_LOADFROMFILE); 
+	g_hDragonEffect1 = (HBITMAP)LoadImage(NULL, L"Media\\dragon_critical.bmp", IMAGE_BITMAP, 1000,300, LR_LOADFROMFILE);
 	GetClientRect(hwnd, &g_rect);
 	
 
 	//Config hero properties
-	Hero.CurrHp = Hero.MaxHp = 1000;
+	Hero.CurrHp = Hero.MaxHp = 10;
 	Hero.Level = 6;
 	Hero.CurrMp = Hero.MaxMp = 100;
 	Hero.Strength = 10;
@@ -379,7 +380,8 @@ VOID CheckDeath(int CurrHp, bool isHero)
 	{
 		g_bGameOver = true;
 		if (isHero)
-		{
+		{ 
+			PlaySound(L"Media\\gameOverSound.wav", NULL, SND_FILENAME | SND_ASYNC);
 			swprintf_s(str, L": You die!");		
 			Msg_Insert(str);
 		}
@@ -530,9 +532,10 @@ VOID DragonAction_Paint()
 	switch(Dragon_Actions)
 	{
 	case ACTION_NORMAL:							
-		//SelectObject(g_bufdc,g_hBossSkill1);
-		//TransparentBlt(g_mdc,500,150,234,188,g_bufdc,0,0,234,188,RGB(0,0,0));
-	
+		SelectObject(g_bufdc,g_hDragonEffect1);
+		BitBlt(g_mdc, 470, 250, 500, 300, g_bufdc, 500, 0, SRCAND);
+		BitBlt(g_mdc, 470, 250, 500, 300, g_bufdc, 0, 0, SRCPAINT);
+		
 		if(g_iFrameNo == 30)
 		{
 			loss = rand()%Dragon.Agility+ Dragon.Level*Dragon.Strength;
@@ -546,8 +549,7 @@ VOID DragonAction_Paint()
 		break;
 
 	case ACTION_MAGIC:							
-		//SelectObject(g_bufdc,g_hBossSkill2);
-		//TransparentBlt(g_mdc,450,150,387,254,g_bufdc,0,0,387,254,RGB(0,0,0));
+		
 		if(g_iFrameNo == 30)
 		{
 			loss = 2*(2*(rand()%Dragon.Agility) + Dragon.Strength*Dragon.Intellect); 
@@ -561,8 +563,6 @@ VOID DragonAction_Paint()
 		break;
 
 	case ACTION_CRITICAL:							
-		//SelectObject(g_bufdc,g_hBossSkill3);
-		//TransparentBlt(g_mdc,280,100,574,306,g_bufdc,0,0,574,306,RGB(0,0,0));
 
 		if(g_iFrameNo == 30)
 		{
@@ -577,8 +577,7 @@ VOID DragonAction_Paint()
 		break;
 
 	case ACTION_RECOVER:						
-		//SelectObject(g_bufdc,g_hRecoverSkill);
-		//TransparentBlt(g_mdc,150,150,150,150,g_bufdc,0,0,150,150,RGB(0,0,0));
+		
 		if(g_iFrameNo == 30)
 		{
 			recover= 2*Dragon.Intellect*Dragon.Intellect;
