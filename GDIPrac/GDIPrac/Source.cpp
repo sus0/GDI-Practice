@@ -9,7 +9,7 @@
 #define WINDOW_TITLE L"GameDevPractice"
 #define WINDOW_WIDTH 1024
 #define WINDOW_HEIGHT 768
-
+#define PARTICLE_NUMBER 50
 
 //------------------------------------------------------------------------------------------------------------
 //DESCRIPTION: Declare all global variables here
@@ -18,11 +18,14 @@ HDC g_hdc = NULL, g_mdc= NULL, g_bufdc = NULL; //global hdc
 DWORD g_tPrev = 0, g_tCurr = 0;
 RECT g_rect;
 int g_iFrameNo, g_iTextLineNo;
+int g_RainNo = 0;
 wchar_t text[7][100]; // store the output texts
+RAIN Raindrops[PARTICLE_NUMBER];
 BOOL g_bAttack, g_bGameOver;
 CHARACTER Hero, Dragon;
 Actions Hero_Actions, Dragon_Actions;
 //HBITMAPS
+HBITMAP g_hRain;
 HBITMAP g_hBackground, g_hGameOver, g_hVictory;
 		//hero side
 HBITMAP g_hHero;
@@ -46,7 +49,7 @@ VOID HeroAction_Logic();
 VOID HeroAction_Paint();
 VOID DragonAction_Logic();
 VOID DragonAction_Paint();
-
+VOID Rain_Paint();
 //------------------------------------------------------------------------------------------------------------
 //DESCRIPTION: WinMain function
 //------------------------------------------------------------------------------------------------------------
@@ -214,6 +217,7 @@ BOOL Game_Initializer(HWND hwnd)
 	g_hSkillBt3 = (HBITMAP)LoadImage(NULL, L"Media\\bt3.bmp", IMAGE_BITMAP, 50, 50, LR_LOADFROMFILE); 
 	g_hSkillBt4 = (HBITMAP)LoadImage(NULL, L"Media\\bt4.bmp", IMAGE_BITMAP, 50, 50, LR_LOADFROMFILE); 
 	g_hDragonEffect1 = (HBITMAP)LoadImage(NULL, L"Media\\dragon_critical.bmp", IMAGE_BITMAP, 1000,300, LR_LOADFROMFILE);
+	g_hRain = (HBITMAP)LoadImage(NULL, L"Media\\raindrop.bmp", IMAGE_BITMAP, 10, 30, LR_LOADFROMFILE);
 	GetClientRect(hwnd, &g_rect);
 	
 
@@ -253,6 +257,7 @@ VOID Game_Main(HWND hwnd)
 
 	SelectObject(g_bufdc, g_hBackground);
 	BitBlt(g_mdc, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, g_bufdc, 0, 0, SRCCOPY);
+
 
 	SetTextColor(g_mdc, RGB(0, 0, 0));
 	
@@ -361,13 +366,19 @@ VOID Game_Main(HWND hwnd)
 					Hero.CurrMp = Hero.MaxMp;
 				}
 
-			swprintf_s(str, L"Your MP recovers [%d] MP after this round", MpRecovered);
+			swprintf_s(str, L"Your MP recovers %d MP after this round", MpRecovered);
 			Msg_Insert(str);
 		
 			}
 		}
 	}
 
+	
+	//Let it pour
+	if ( !g_bGameOver )
+	{
+		Rain_Paint();
+	}
 
 	BitBlt(g_hdc, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, g_mdc, 0, 0, SRCCOPY);
 	g_tPrev = GetTickCount();
@@ -622,4 +633,38 @@ BOOL Game_ShutDown(HWND hwnd)
 	DeleteDC(g_mdc);
 	ReleaseDC(hwnd, g_hdc);
 	return true;
+}
+//------------------------------------------------------------------------------------------------------------
+//DESCRIPTION: paint the rain drops
+//------------------------------------------------------------------------------------------------------------
+VOID Rain_Paint()
+{
+	if(g_RainNo < PARTICLE_NUMBER)
+	{
+		Raindrops[g_RainNo].x = rand()%g_rect.right;
+		Raindrops[g_RainNo].y = 0;
+		Raindrops[g_RainNo].ifExists = true;
+		g_RainNo ++;
+	}
+
+	for (int i = 0; i < PARTICLE_NUMBER; i++)
+	{
+		if (Raindrops[i].ifExists)
+		{
+			SelectObject(g_bufdc, g_hRain);
+			TransparentBlt(g_mdc, Raindrops[i].x, Raindrops[i].y, 10, 30, g_bufdc, 0, 0, 10, 30, RGB(0, 0, 0));
+
+			Raindrops[i].y += 10;
+
+			if (Raindrops[i].y > g_rect.bottom)
+			{
+				Raindrops[i].x = rand()%g_rect.right;
+				Raindrops[i].y = 0;
+			}
+
+
+		}
+
+	}
+
 }

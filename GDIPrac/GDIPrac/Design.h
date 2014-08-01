@@ -12,6 +12,13 @@ struct CHARACTER
 	int Intellect; //Intellect of the character
 };
 
+struct RAIN
+{
+	int x;
+	int y;
+	BOOL ifExists;
+};
+
 
 enum Actions
 {
@@ -21,3 +28,5 @@ enum Actions
 	ACTION_MISS = 3,
 	ACTION_RECOVER = 4
 };
+
+
