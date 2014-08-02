@@ -18,7 +18,8 @@ HDC g_hdc = NULL, g_mdc= NULL, g_bufdc = NULL; //global hdc
 DWORD g_tPrev = 0, g_tCurr = 0;
 RECT g_rect;
 int g_iFrameNo, g_iTextLineNo;
-int g_RainNo = 0;
+int g_iRainNo = 0;
+int g_iFlameNo = 0;
 wchar_t text[7][100]; // store the output texts
 RAIN Raindrops[PARTICLE_NUMBER];
 BOOL g_bAttack, g_bGameOver;
@@ -26,7 +27,8 @@ CHARACTER Hero, Dragon;
 Actions Hero_Actions, Dragon_Actions;
 //HBITMAPS
 HBITMAP g_hRain;
-HBITMAP g_hBackground, g_hGameOver, g_hVictory;
+HBITMAP g_hFlames;
+HBITMAP g_hBackground, g_hGameOver, g_hVictory, g_hTryAgain;
 		//hero side
 HBITMAP g_hHero;
 HBITMAP g_hSkillBt1, g_hSkillBt2, g_hSkillBt3, g_hSkillBt4;
@@ -174,6 +176,14 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					g_bAttack = true;
 					Hero_Actions = ACTION_RECOVER;
 				}
+				if(x >=360 && x<= 660 && y >=550 && y<=620)
+				{
+					//if (g_bGameOver == true)
+					//{
+					//	Game_Initializer(hwnd);
+					//	Game_Main(hwnd);
+					//}
+				}
 
 			}
 
@@ -218,13 +228,16 @@ BOOL Game_Initializer(HWND hwnd)
 	g_hSkillBt4 = (HBITMAP)LoadImage(NULL, L"Media\\bt4.bmp", IMAGE_BITMAP, 50, 50, LR_LOADFROMFILE); 
 	g_hDragonEffect1 = (HBITMAP)LoadImage(NULL, L"Media\\dragon_critical.bmp", IMAGE_BITMAP, 1000,300, LR_LOADFROMFILE);
 	g_hRain = (HBITMAP)LoadImage(NULL, L"Media\\raindrop.bmp", IMAGE_BITMAP, 10, 30, LR_LOADFROMFILE);
+	g_hFlames = (HBITMAP)LoadImage(NULL, L"Media\\flames.bmp", IMAGE_BITMAP, 300, 100, LR_LOADFROMFILE);
+	g_hTryAgain = (HBITMAP)LoadImage(NULL, L"Media\\tryagain_black.bmp", IMAGE_BITMAP, 600, 70, LR_LOADFROMFILE);
+
 	GetClientRect(hwnd, &g_rect);
 	
 
 	//Config hero properties
 	Hero.CurrHp = Hero.MaxHp = 1000;
 	Hero.Level = 6;
-	Hero.CurrMp = Hero.MaxMp = 100;
+	Hero.CurrMp = Hero.MaxMp = 70;
 	Hero.Strength = 10;
 	Hero.Agility = 20;
 	Hero.Intellect = 10;
@@ -306,6 +319,10 @@ VOID Game_Main(HWND hwnd)
 			SelectObject(g_bufdc, g_hGameOver);	
 			BitBlt(g_mdc, 260, 200, 500, 400, g_bufdc, 500, 0, SRCAND);
 			BitBlt(g_mdc, 260, 200, 500, 400, g_bufdc, 0, 0, SRCPAINT);
+			SelectObject(g_bufdc, g_hTryAgain);
+			//TransparentBlt(g_mdc, 360, 600, 300, 70 , g_bufdc, 0, 0, 300, 70, RGB(0, 0, 0));
+			BitBlt(g_mdc, 360, 550, 300, 70, g_bufdc, 300, 0, SRCAND);
+			BitBlt(g_mdc, 360, 550, 300, 70, g_bufdc, 0, 0, SRCPAINT);
 		}
 		else
 		{
@@ -338,6 +355,7 @@ VOID Game_Main(HWND hwnd)
 				HeroAction_Logic();
 				CheckDeath(Dragon.CurrHp, false);
 			}
+			HeroAction_Paint();
 		}
 
 		if(g_iFrameNo == 15)
@@ -345,12 +363,12 @@ VOID Game_Main(HWND hwnd)
 			DragonAction_Logic();
 		}
 
-		if(g_iFrameNo >=26 && g_iFrameNo <=30)
+		if(g_iFrameNo >=26 && g_iFrameNo <=40)
 		{
 			DragonAction_Paint();
 		}
 
-		if(g_iFrameNo == 30)
+		if(g_iFrameNo == 40)
 		{
 			g_bAttack = false;
 			g_iFrameNo = 0;
@@ -374,10 +392,15 @@ VOID Game_Main(HWND hwnd)
 	}
 
 	
-	//Let it pour
-	if ( !g_bGameOver )
+	////Let it pour
+	//if ( !g_bGameOver )
+	//{
+	//	Rain_Paint();
+	//}
+	g_iFlameNo++;
+	if(g_iFlameNo == 3)
 	{
-		Rain_Paint();
+		g_iFlameNo = 0;
 	}
 
 	BitBlt(g_hdc, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, g_mdc, 0, 0, SRCCOPY);
@@ -497,6 +520,33 @@ VOID HeroAction_Logic()
 }
 
 //------------------------------------------------------------------------------------------------------------
+//DESCRIPTION: Draw hero's attack effects here
+//------------------------------------------------------------------------------------------------------------
+VOID HeroAction_Paint()
+{
+
+	switch (Hero_Actions)
+	{
+	case ACTION_NORMAL:
+		break;
+	case ACTION_CRITICAL:
+		break;
+	case ACTION_MAGIC:
+		SelectObject(g_bufdc, g_hFlames);
+		TransparentBlt(g_mdc, 200, 300, 100, 100, g_bufdc, g_iFlameNo*100, 0, 100, 100, RGB(0, 0, 0));
+		TransparentBlt(g_mdc, 100, 400, 100, 100, g_bufdc, g_iFlameNo*100, 0, 100, 100, RGB(0, 0, 0));
+		TransparentBlt(g_mdc, 300, 400, 100, 100, g_bufdc, g_iFlameNo*100, 0, 100, 100, RGB(0, 0, 0));
+
+		break;
+	case ACTION_MISS:
+		break;
+	case ACTION_RECOVER:
+		break;
+	default:
+		break;
+	}
+}
+//------------------------------------------------------------------------------------------------------------
 //DESCRIPTION: Dragon attack logics
 //------------------------------------------------------------------------------------------------------------
 VOID DragonAction_Logic()
@@ -568,7 +618,7 @@ VOID DragonAction_Paint()
 		break;
 
 	case ACTION_MAGIC:							
-		
+		Rain_Paint();
 		if(g_iFrameNo == 30)
 		{
 			loss = 2*(2*(rand()%Dragon.Agility) + Dragon.Strength*Dragon.Intellect); 
@@ -616,6 +666,8 @@ BOOL Game_ShutDown(HWND hwnd)
 	DeleteObject(g_hBackground);
 	DeleteObject(g_hVictory);
 	DeleteObject(g_hGameOver);
+	DeleteObject(g_hFlames);
+	DeleteObject(g_hTryAgain);
 	DeleteObject(g_hDragon);
 	DeleteObject(g_hHero);
 	DeleteObject(g_hSkillBt1);
@@ -639,12 +691,12 @@ BOOL Game_ShutDown(HWND hwnd)
 //------------------------------------------------------------------------------------------------------------
 VOID Rain_Paint()
 {
-	if(g_RainNo < PARTICLE_NUMBER)
+	if(g_iRainNo < PARTICLE_NUMBER)
 	{
-		Raindrops[g_RainNo].x = rand()%g_rect.right;
-		Raindrops[g_RainNo].y = 0;
-		Raindrops[g_RainNo].ifExists = true;
-		g_RainNo ++;
+		Raindrops[g_iRainNo].x = g_rect.right/2 + rand()%(g_rect.right/2);
+		Raindrops[g_iRainNo].y = 250 + rand()%400;
+		Raindrops[g_iRainNo].ifExists = true;
+		g_iRainNo ++;
 	}
 
 	for (int i = 0; i < PARTICLE_NUMBER; i++)
@@ -656,12 +708,13 @@ VOID Rain_Paint()
 
 			Raindrops[i].y += 10;
 
-			if (Raindrops[i].y > g_rect.bottom)
+			if (Raindrops[i].y > 650)
 			{
-				Raindrops[i].x = rand()%g_rect.right;
-				Raindrops[i].y = 0;
+				//Raindrops[i].x = rand()%g_rect.right;
+				Raindrops[i].x = g_rect.right/2 + rand()%(g_rect.right/2);
+				Raindrops[i].y = 250 + rand()%400;
 			}
-
+			
 
 		}
 
