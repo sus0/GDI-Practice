@@ -23,12 +23,13 @@ int g_iFlameNo = 0;
 wchar_t text[7][100]; // store the output texts
 RAIN Raindrops[PARTICLE_NUMBER];
 BOOL g_bAttack, g_bGameOver;
+BOOL g_bHover = false;
 CHARACTER Hero, Dragon;
 Actions Hero_Actions, Dragon_Actions;
 //HBITMAPS
 HBITMAP g_hRain;
 HBITMAP g_hFlames;
-HBITMAP g_hBackground, g_hGameOver, g_hVictory, g_hTryAgain;
+HBITMAP g_hBackground, g_hGameOver, g_hVictory, g_hTryAgain, g_hTryAgain_Red;
 		//hero side
 HBITMAP g_hHero;
 HBITMAP g_hSkillBt1, g_hSkillBt2, g_hSkillBt3, g_hSkillBt4;
@@ -52,6 +53,8 @@ VOID HeroAction_Paint();
 VOID DragonAction_Logic();
 VOID DragonAction_Paint();
 VOID Rain_Paint();
+VOID Game_Restart(HWND hwnd);
+
 //------------------------------------------------------------------------------------------------------------
 //DESCRIPTION: WinMain function
 //------------------------------------------------------------------------------------------------------------
@@ -148,6 +151,18 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			PostQuitMessage(0);
 			break;
 
+		case WM_MOUSEHOVER:
+			if (g_bGameOver == true)
+			{
+				int x = LOWORD(lParam); 
+				int y = HIWORD(lParam);
+				if (x >=360 && x <= 660 && y >=550 && y <=620)
+				{
+					g_bHover = true;
+				}
+			}
+			break;
+
 		case WM_LBUTTONDOWN: //left button of mouse clicked
 			if(!g_bAttack)
 			{
@@ -176,17 +191,18 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					g_bAttack = true;
 					Hero_Actions = ACTION_RECOVER;
 				}
-				if(x >=360 && x<= 660 && y >=550 && y<=620)
-				{
-					//if (g_bGameOver == true)
-					//{
-					//	Game_Initializer(hwnd);
-					//	Game_Main(hwnd);
-					//}
-				}
-
 			}
 
+			if(g_bGameOver == true)
+			{		
+				int x = LOWORD(lParam);
+				int y = HIWORD(lParam);
+				if(x >=360 && x<= 660 && y >=550 && y<=620)
+				{
+					Game_Restart(hwnd);
+				}
+				
+			}
 			break;
 
 		default:
@@ -230,12 +246,13 @@ BOOL Game_Initializer(HWND hwnd)
 	g_hRain = (HBITMAP)LoadImage(NULL, L"Media\\raindrop.bmp", IMAGE_BITMAP, 10, 30, LR_LOADFROMFILE);
 	g_hFlames = (HBITMAP)LoadImage(NULL, L"Media\\flames.bmp", IMAGE_BITMAP, 300, 100, LR_LOADFROMFILE);
 	g_hTryAgain = (HBITMAP)LoadImage(NULL, L"Media\\tryagain_black.bmp", IMAGE_BITMAP, 600, 70, LR_LOADFROMFILE);
+	g_hTryAgain_Red = (HBITMAP)LoadImage(NULL, L"Media\\tryagain_red.bmp", IMAGE_BITMAP, 300, 70, LR_LOADFROMFILE);
 
 	GetClientRect(hwnd, &g_rect);
 	
 
 	//Config hero properties
-	Hero.CurrHp = Hero.MaxHp = 1000;
+	Hero.CurrHp = Hero.MaxHp = 100;
 	Hero.Level = 6;
 	Hero.CurrMp = Hero.MaxMp = 70;
 	Hero.Strength = 10;
@@ -329,6 +346,13 @@ VOID Game_Main(HWND hwnd)
 			SelectObject(g_bufdc, g_hVictory);	
 			BitBlt(g_mdc, 260, 200, 500, 400, g_bufdc, 500, 0, SRCAND);
 			BitBlt(g_mdc, 260, 200, 500, 400, g_bufdc, 0, 0, SRCPAINT);
+
+			if(g_bHover == true)
+			{
+				SelectObject(g_bufdc, g_hTryAgain_Red);
+				TransparentBlt(g_mdc, 350, 550, 300, 70, g_bufdc, 0, 0, 300, 70, RGB(255, 255, 255));
+				g_bHover = false;
+			}
 		}
 	}
 	
@@ -619,7 +643,7 @@ VOID DragonAction_Paint()
 
 	case ACTION_MAGIC:							
 		Rain_Paint();
-		if(g_iFrameNo == 30)
+		if(g_iFrameNo == 40)
 		{
 			loss = 2*(2*(rand()%Dragon.Agility) + Dragon.Strength*Dragon.Intellect); 
 			Hero.CurrHp -= loss;	   
@@ -633,7 +657,7 @@ VOID DragonAction_Paint()
 
 	case ACTION_CRITICAL:							
 
-		if(g_iFrameNo == 30)
+		if(g_iFrameNo == 40)
 		{
 			loss = 2*(rand()%Dragon.Agility+ Dragon.Level*Dragon.Strength);
 			Hero.CurrHp -= (int)loss;
@@ -647,7 +671,7 @@ VOID DragonAction_Paint()
 
 	case ACTION_RECOVER:						
 		
-		if(g_iFrameNo == 30)
+		if(g_iFrameNo == 40)
 		{
 			recover= 2*Dragon.Intellect*Dragon.Intellect;
 			Dragon.CurrHp +=recover;
@@ -668,6 +692,7 @@ BOOL Game_ShutDown(HWND hwnd)
 	DeleteObject(g_hGameOver);
 	DeleteObject(g_hFlames);
 	DeleteObject(g_hTryAgain);
+	DeleteObject(g_hTryAgain_Red);
 	DeleteObject(g_hDragon);
 	DeleteObject(g_hHero);
 	DeleteObject(g_hSkillBt1);
@@ -721,3 +746,24 @@ VOID Rain_Paint()
 	}
 
 }
+
+VOID Game_Restart(HWND hwnd)
+{
+	PlaySound(L"Media\\bgm.wav", NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
+	g_bGameOver = false;
+	g_iTextLineNo = 0;
+	for (int i = 0; i < 7; i++)
+	{
+		swprintf_s(text[i], L"");
+	}
+	//wchar_t temp_text[7][100];
+	//text[7][100] = temp_text[7][100];
+	g_bAttack = false;
+	g_iFrameNo = 0;
+	g_iRainNo = 0;
+
+	Game_Initializer(hwnd);
+						
+
+}
+
