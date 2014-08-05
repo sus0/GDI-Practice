@@ -38,7 +38,7 @@ HBITMAP g_hHeroEffect1, g_hHeroEffect2, g_hHeroEffect3, g_hHeroRecoverEffect;
 		//dragon side
 HBITMAP g_hDragon;
 HBITMAP g_hDragonEffect1, g_hDragonEffect2, g_hDragonEffect3;
-
+TRACKMOUSEEVENT g_tme;
 //------------------------------------------------------------------------------------------------------------
 //DESCRIPTION: Forward declaration
 //------------------------------------------------------------------------------------------------------------
@@ -106,12 +106,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	PlaySound(L"Media\\bgm.wav", NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
 
+	g_tme.cbSize=sizeof(g_tme);
+	g_tme.dwFlags=TME_HOVER;
+	g_tme.hwndTrack = hwnd;
+	g_tme.dwHoverTime=HOVER_DEFAULT;
+
+	
+
 	//Message loop
 	MSG msg = {0};
 	while(msg.message != WM_QUIT)
 	{
 		if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) // get the msg from msg queue
 		{
+			TrackMouseEvent(&g_tme);
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
@@ -158,6 +166,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				int y = HIWORD(lParam);
 				if (x >=360 && x <= 660 && y >=550 && y <=620)
 				{
+					//MessageBox(0, L"Couldn't load the image", L"Error", MB_OK);
 					g_bHover = true;
 				}
 			}
@@ -231,7 +240,7 @@ BOOL Game_Initializer(HWND hwnd)
 	//load game resources
 	//HBITMAP image=(HBITMAP)LoadImage(0,L"Media\\bt2.bmp",IMAGE_BITMAP,360, 360,LR_LOADFROMFILE);
 	//if(image == NULL)
-   //MessageBox(0, L"Couldn't load the image", L"Error", MB_OK);
+ //  MessageBox(0, L"Couldn't load the image", L"Error", MB_OK);
 
 	g_hBackground = (HBITMAP)LoadImage(NULL,L"Media\\nbk2.bmp", IMAGE_BITMAP, 1022, 767, LR_LOADFROMFILE);
 	g_hGameOver = (HBITMAP)LoadImage(NULL,L"Media\\gameover.bmp", IMAGE_BITMAP, 1000, 400, LR_LOADFROMFILE);
@@ -247,6 +256,7 @@ BOOL Game_Initializer(HWND hwnd)
 	g_hFlames = (HBITMAP)LoadImage(NULL, L"Media\\flames.bmp", IMAGE_BITMAP, 300, 100, LR_LOADFROMFILE);
 	g_hTryAgain = (HBITMAP)LoadImage(NULL, L"Media\\tryagain_black.bmp", IMAGE_BITMAP, 600, 70, LR_LOADFROMFILE);
 	g_hTryAgain_Red = (HBITMAP)LoadImage(NULL, L"Media\\tryagain_red.bmp", IMAGE_BITMAP, 300, 70, LR_LOADFROMFILE);
+
 
 	GetClientRect(hwnd, &g_rect);
 	
@@ -340,19 +350,19 @@ VOID Game_Main(HWND hwnd)
 			//TransparentBlt(g_mdc, 360, 600, 300, 70 , g_bufdc, 0, 0, 300, 70, RGB(0, 0, 0));
 			BitBlt(g_mdc, 360, 550, 300, 70, g_bufdc, 300, 0, SRCAND);
 			BitBlt(g_mdc, 360, 550, 300, 70, g_bufdc, 0, 0, SRCPAINT);
+			
+			if(g_bHover == true)
+			{
+				SelectObject(g_bufdc, g_hTryAgain_Red);
+				TransparentBlt(g_mdc, 362, 549, 300, 70, g_bufdc, 0, 0, 300, 70, RGB(255, 255, 255));
+				g_bHover = false;
+			}
 		}
 		else
 		{
 			SelectObject(g_bufdc, g_hVictory);	
 			BitBlt(g_mdc, 260, 200, 500, 400, g_bufdc, 500, 0, SRCAND);
 			BitBlt(g_mdc, 260, 200, 500, 400, g_bufdc, 0, 0, SRCPAINT);
-
-			if(g_bHover == true)
-			{
-				SelectObject(g_bufdc, g_hTryAgain_Red);
-				TransparentBlt(g_mdc, 350, 550, 300, 70, g_bufdc, 0, 0, 300, 70, RGB(255, 255, 255));
-				g_bHover = false;
-			}
 		}
 	}
 	
