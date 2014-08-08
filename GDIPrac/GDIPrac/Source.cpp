@@ -19,9 +19,11 @@ DWORD g_tPrev = 0, g_tCurr = 0;
 RECT g_rect;
 int g_iFrameNo, g_iTextLineNo;
 int g_iRainNo = 0;
+int g_iRecovery = 0;
 int g_iFlameNo = 0;
 wchar_t text[7][100]; // store the output texts
 RAIN Raindrops[PARTICLE_NUMBER];
+RAIN Recovery[PARTICLE_NUMBER];
 BOOL g_bAttack, g_bGameOver;
 BOOL g_bHover = false;
 CHARACTER Hero, Dragon;
@@ -29,6 +31,7 @@ Actions Hero_Actions, Dragon_Actions;
 //HBITMAPS
 HBITMAP g_hRain;
 HBITMAP g_hFlames;
+HBITMAP g_hRecovery;
 HBITMAP g_hBackground, g_hGameOver, g_hVictory, g_hTryAgain, g_hTryAgain_Red;
 		//hero side
 HBITMAP g_hHero;
@@ -39,6 +42,8 @@ HBITMAP g_hHeroEffect1, g_hHeroEffect2, g_hHeroEffect3, g_hHeroRecoverEffect;
 HBITMAP g_hDragon;
 HBITMAP g_hDragonEffect1, g_hDragonEffect2, g_hDragonEffect3;
 TRACKMOUSEEVENT g_tme;
+
+HBITMAP g_hMiss;
 //------------------------------------------------------------------------------------------------------------
 //DESCRIPTION: Forward declaration
 //------------------------------------------------------------------------------------------------------------
@@ -54,6 +59,7 @@ VOID DragonAction_Logic();
 VOID DragonAction_Paint();
 VOID Rain_Paint();
 VOID Game_Restart(HWND hwnd);
+VOID Recovery_Paint();
 
 //------------------------------------------------------------------------------------------------------------
 //DESCRIPTION: WinMain function
@@ -256,13 +262,14 @@ BOOL Game_Initializer(HWND hwnd)
 	g_hFlames = (HBITMAP)LoadImage(NULL, L"Media\\flames.bmp", IMAGE_BITMAP, 300, 100, LR_LOADFROMFILE);
 	g_hTryAgain = (HBITMAP)LoadImage(NULL, L"Media\\tryagain_black.bmp", IMAGE_BITMAP, 600, 70, LR_LOADFROMFILE);
 	g_hTryAgain_Red = (HBITMAP)LoadImage(NULL, L"Media\\tryagain_red.bmp", IMAGE_BITMAP, 300, 70, LR_LOADFROMFILE);
-
+	g_hMiss = (HBITMAP)LoadImage(NULL, L"Media\\miss.bmp", IMAGE_BITMAP, 200, 150, LR_LOADFROMFILE);
+	g_hRecovery = (HBITMAP)LoadImage(NULL, L"Media\\recoveryeffect.bmp", IMAGE_BITMAP, 20, 20, LR_LOADFROMFILE);
 
 	GetClientRect(hwnd, &g_rect);
 	
 
 	//Config hero properties
-	Hero.CurrHp = Hero.MaxHp = 100;
+	Hero.CurrHp = Hero.MaxHp = 1000;
 	Hero.Level = 6;
 	Hero.CurrMp = Hero.MaxMp = 70;
 	Hero.Strength = 10;
@@ -573,8 +580,11 @@ VOID HeroAction_Paint()
 
 		break;
 	case ACTION_MISS:
+		SelectObject(g_bufdc, g_hMiss);
+		TransparentBlt(g_mdc, 200, 300, 200, 150, g_bufdc, 0, 0, 200, 150, RGB(255, 255, 255));
 		break;
 	case ACTION_RECOVER:
+		Recovery_Paint();
 		break;
 	default:
 		break;
@@ -680,9 +690,9 @@ VOID DragonAction_Paint()
 		break;
 
 	case ACTION_RECOVER:						
-		
 		if(g_iFrameNo == 40)
 		{
+			Recovery_Paint();
 			recover= 2*Dragon.Intellect*Dragon.Intellect;
 			Dragon.CurrHp +=recover;
 			swprintf_s(str,L"It just recovered itself by %d hp. Got to take an actiom!",recover);
@@ -715,7 +725,9 @@ BOOL Game_ShutDown(HWND hwnd)
 	DeleteObject(g_hDragonEffect1);
 	DeleteObject(g_hDragonEffect2);
 	DeleteObject(g_hDragonEffect3);
-	
+	DeleteObject(g_hRecovery);
+	DeleteObject(g_hMiss);
+
 	DeleteDC(g_bufdc);
 	DeleteDC(g_mdc);
 	ReleaseDC(hwnd, g_hdc);
@@ -756,6 +768,37 @@ VOID Rain_Paint()
 	}
 
 }
+
+VOID Recovery_Paint()
+{
+	if(g_iRecovery < PARTICLE_NUMBER)
+	{
+		Recovery[g_iRecovery].x = g_rect.right/2 + rand()%(g_rect.right/2);
+		Recovery[g_iRecovery].y = 250 + rand()%400;
+		Recovery[g_iRecovery].ifExists = true;
+		g_iRecovery ++;
+	}
+
+	for (int i = 0; i < PARTICLE_NUMBER; i++)
+	{
+		if (Recovery[i].ifExists)
+		{
+			SelectObject(g_bufdc, g_hRecovery);
+			TransparentBlt(g_mdc, Recovery[i].x, Recovery[i].y, 10, 30, g_bufdc, 0, 0, 10, 30, RGB(0, 0, 0));
+
+			Recovery[i].y += 10;
+
+			if (Recovery[i].y > 650)
+			{
+				Recovery[i].x = g_rect.right/2 + rand()%(g_rect.right/2);
+				Recovery[i].y = 250 + rand()%400;
+			}
+		}
+
+	}
+
+}
+
 
 VOID Game_Restart(HWND hwnd)
 {
